@@ -1,1 +1,0 @@
-# flamapp-ai-assignment
