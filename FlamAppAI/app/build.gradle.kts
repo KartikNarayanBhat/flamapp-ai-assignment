@@ -6,6 +6,7 @@ plugins {
 
 android {
     namespace = "com.kartik.flamappai"
+
     compileSdk {
         version = release(36)
     }
@@ -18,6 +19,16 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // NDK + CMake flags
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++17 -frtti -fexceptions"
+            }
+        }
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
     }
 
     buildTypes {
@@ -29,6 +40,14 @@ android {
             )
         }
     }
+
+    // Point to your CMakeLists.txt in src/main/cpp
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -50,6 +69,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

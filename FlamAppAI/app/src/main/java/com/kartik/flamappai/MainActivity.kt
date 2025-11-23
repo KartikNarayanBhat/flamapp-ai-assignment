@@ -16,6 +16,10 @@ import com.kartik.flamappai.ui.theme.FlamAppAITheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // call native init once
+        NativeBridge.initNative()
+
         enableEdgeToEdge()
         setContent {
             FlamAppAITheme {
