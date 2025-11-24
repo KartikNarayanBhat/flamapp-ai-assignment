@@ -101,10 +101,11 @@ You will see four edge‑detected frames in a grid. Clicking any image opens it 
 
 ### Android app
 
-![Android edge view](Screenshots/frame1.png)
+<img src="Screenshots/frame1.png" alt="Android edge view" width="400" />
 
 ### Web viewer
 
-![Web edge gallery 1](Screenshots/frame2.png)
-![Web edge gallery 2](Screenshots/frame3.png)
-![Web edge gallery 3](Screenshots/frame4.png)
+<img src="Screenshots/frame2.png" alt="Web edge gallery 1" width="400" />
+<img src="Screenshots/frame3.png" alt="Web edge gallery 2" width="400" />
+<img src="Screenshots/frame4.png" alt="Web edge gallery 3" width="400" />
+
