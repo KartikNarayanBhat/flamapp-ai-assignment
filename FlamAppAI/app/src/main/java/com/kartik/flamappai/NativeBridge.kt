@@ -6,4 +6,10 @@ object NativeBridge {
     }
 
     external fun initNative()
+
+    external fun processFrame(
+        width: Int,
+        height: Int,
+        yuvNv21: ByteArray
+    ): ByteArray
 }
