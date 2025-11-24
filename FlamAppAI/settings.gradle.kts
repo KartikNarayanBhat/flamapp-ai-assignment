@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "FlamAppAI"
 include(":app")
+include(":opencv")

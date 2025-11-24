@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.ImageFormat
+import android.graphics.Rect
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.*
 import android.media.Image
@@ -15,6 +16,7 @@ import android.view.TextureView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -23,10 +25,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.content.ContextCompat
 import com.kartik.flamappai.ui.theme.FlamAppAITheme
+import org.opencv.android.OpenCVLoader
+import org.opencv.android.Utils
+import org.opencv.core.CvType
+import org.opencv.core.Mat
+import org.opencv.imgproc.Imgproc
 import java.nio.ByteBuffer
 
 class MainActivity : ComponentActivity() {
@@ -39,8 +48,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // NDK + OpenCV init
-        NativeBridge.initNative()
+        val ok = OpenCVLoader.initDebug()
+        Log.i(TAG, "OpenCV init = $ok")
 
         enableEdgeToEdge()
         setContent {
@@ -52,7 +61,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // Handle permission result: after user taps "Allow", recreate so Compose restarts with permission
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
@@ -82,7 +90,6 @@ fun CameraScreen(modifier: Modifier = Modifier) {
         )
     }
 
-    // Request permission on first composition if not granted
     LaunchedEffect(Unit) {
         if (!hasCameraPermissionState.value && context is ComponentActivity) {
             context.requestPermissions(
@@ -93,7 +100,6 @@ fun CameraScreen(modifier: Modifier = Modifier) {
     }
 
     if (!hasCameraPermissionState.value) {
-        // Placeholder view while waiting for permission
         AndroidView(
             modifier = modifier.fillMaxSize(),
             factory = { TextureView(it) }
@@ -101,36 +107,46 @@ fun CameraScreen(modifier: Modifier = Modifier) {
         return
     }
 
-    // Permission granted -> show TextureView with Camera2 preview
-    AndroidView(
-        modifier = modifier.fillMaxSize(),
-        factory = { ctx ->
-            val textureView = TextureView(ctx)
-            textureView.surfaceTextureListener =
-                object : TextureView.SurfaceTextureListener {
-                    override fun onSurfaceTextureAvailable(
-                        surfaceTexture: SurfaceTexture,
-                        width: Int,
-                        height: Int
-                    ) {
-                        startCameraPreview(ctx, textureView)
+    val frameBitmap = FrameState.lastFrameBitmap.value
+
+    if (frameBitmap == null) {
+        AndroidView(
+            modifier = modifier.fillMaxSize(),
+            factory = { ctx ->
+                val textureView = TextureView(ctx)
+                textureView.surfaceTextureListener =
+                    object : TextureView.SurfaceTextureListener {
+                        override fun onSurfaceTextureAvailable(
+                            surfaceTexture: SurfaceTexture,
+                            width: Int,
+                            height: Int
+                        ) {
+                            startCameraPreview(ctx, textureView)
+                        }
+
+                        override fun onSurfaceTextureSizeChanged(
+                            surface: SurfaceTexture,
+                            width: Int,
+                            height: Int
+                        ) = Unit
+
+                        override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
+                            return true
+                        }
+
+                        override fun onSurfaceTextureUpdated(surface: SurfaceTexture) = Unit
                     }
-
-                    override fun onSurfaceTextureSizeChanged(
-                        surface: SurfaceTexture,
-                        width: Int,
-                        height: Int
-                    ) = Unit
-
-                    override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-                        return true
-                    }
-
-                    override fun onSurfaceTextureUpdated(surface: SurfaceTexture) = Unit
-                }
-            textureView
-        }
-    )
+                textureView
+            }
+        )
+    } else {
+        Image(
+            modifier = modifier,
+            bitmap = frameBitmap.asImageBitmap(),
+            contentDescription = "Canny edges",
+            contentScale = ContentScale.Fit
+        )
+    }
 }
 
 private fun startCameraPreview(context: Context, textureView: TextureView) {
@@ -148,7 +164,6 @@ private fun startCameraPreview(context: Context, textureView: TextureView) {
         characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
             ?: return
 
-    // Use smaller, stable sizes (<= 1280x720)
     val previewSize = streamConfig
         .getOutputSizes(SurfaceTexture::class.java)
         .first { it.width <= 1280 && it.height <= 720 }
@@ -166,7 +181,7 @@ private fun startCameraPreview(context: Context, textureView: TextureView) {
 
     imageReader.setOnImageAvailableListener(
         { reader ->
-            val image = reader.acquireLatestImage() ?: return@setOnImageAvailableListener
+            val image: Image = reader.acquireLatestImage() ?: return@setOnImageAvailableListener
             handleYuvImage(image)
             image.close()
         },
@@ -249,17 +264,32 @@ private fun handleYuvImage(image: Image) {
     val uSize = uBuffer.remaining()
     val vSize = vBuffer.remaining()
 
-    // NV21 = Y + interleaved VU
     val nv21 = ByteArray(ySize + uSize + vSize)
     yBuffer.get(nv21, 0, ySize)
     vBuffer.get(nv21, ySize, vSize)
     uBuffer.get(nv21, ySize + vSize, uSize)
 
-    Log.i(
-        MainActivity.TAG,
-        "Frame YUV_420_888 -> NV21, size=${nv21.size}, w=$width h=$height"
-    )
+    Log.i(MainActivity.TAG, "NV21 size=${nv21.size}, w=$width h=$height")
 
-    val rgba = NativeBridge.processFrame(width, height, nv21)
-    Log.i(MainActivity.TAG, "Processed RGBA size=${rgba.size}")
+    // NV21 -> RGBA using OpenCV
+    val nv21Mat = Mat(height + height / 2, width, CvType.CV_8UC1)
+    nv21Mat.put(0, 0, nv21)
+
+    val rgba = Mat()
+    Imgproc.cvtColor(nv21Mat, rgba, Imgproc.COLOR_YUV2RGBA_NV21)
+
+    // Canny on grayscale
+    val gray = Mat()
+    Imgproc.cvtColor(rgba, gray, Imgproc.COLOR_RGBA2GRAY)
+    val edges = Mat()
+    Imgproc.Canny(gray, edges, 80.0, 150.0)
+
+    val edgesColor = Mat()
+    Imgproc.cvtColor(edges, edgesColor, Imgproc.COLOR_GRAY2RGBA)
+
+    val outBitmap =
+        android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+    Utils.matToBitmap(edgesColor, outBitmap)
+
+    FrameState.lastFrameBitmap.value = outBitmap
 }

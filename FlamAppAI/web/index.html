@@ -3,15 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <title>Edge Viewer</title>
+    <style>
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .grid img {
+            width: 100%;
+            height: 250px;
+            object-fit: contain;
+            background: #000;
+            border: 1px solid #444;
+            cursor: pointer;
+        }
+        #stats {
+            margin-top: 12px;
+            text-align: center;
+            font-family: sans-serif;
+        }
+        /* Fullscreen overlay */
+        #overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;             /* hidden by default */
+            justify-content: center;
+            align-items: center;
+        }
+        #overlay-content img {
+            max-width: 80vw;
+            max-height: 80vh;
+            object-fit: contain;
+            background: #000;
+            border: 2px solid #666;
+        }
+        h1 {
+  text-align: center;
+  font-family: sans-serif;
+}
+
+p{
+  text-align: center;
+  font-family: sans-serif;
+  margin-top: 4px;
+  margin-bottom: 16px;
+}
+
+    </style>
 </head>
 <body>
 <h1>Edge Frame Debug Viewer</h1>
+<p>Click on an image for a better view</p>
 
-<!-- Static processed frame -->
-<img id="frame" alt="Processed frame" width="640" />
 
-<!-- Simple stats text -->
+<div class="grid">
+    <img id="frame1" alt="Processed frame 1" />
+    <img id="frame2" alt="Processed frame 2" />
+    <img id="frame3" alt="Processed frame 3" />
+    <img id="frame4" alt="Processed frame 4" />
+</div>
+
 <div id="stats"></div>
+
+<!-- Overlay for big image -->
+<div id="overlay">
+    <div id="overlay-content">
+        <img id="overlay-img" alt="Large view">
+    </div>
+</div>
 
 <script src="main.js"></script>
 </body>

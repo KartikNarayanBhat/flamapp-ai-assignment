@@ -97,3 +97,14 @@ You will see four edge‑detected frames in a grid. Clicking any image opens it 
 
 - The goal of this project is to demonstrate clean integration of **camera → JNI → OpenCV C++ → Android UI**, plus a small **TypeScript web debug viewer**, not to build a full production app.
 - Commit history is kept modular with descriptive messages (for example, `feat: native Canny edges and TypeScript web viewer`).
+## Screenshots
+
+### Android app
+
+![Android edge view](Screenshots/frame1.png)
+
+### Web viewer
+
+![Web edge gallery 1](Screenshots/frame2.png)
+![Web edge gallery 2](Screenshots/frame3.png)
+![Web edge gallery 3](Screenshots/frame4.png)
