@@ -18,7 +18,7 @@ class OpenCvCameraActivity : CameraActivity(),
 
     private lateinit var cameraView: JavaCameraView
     private var rgba: Mat? = null
-    private val nativeBridge = NativeBridge()   // <-- add this
+    private val nativeBridge = NativeBridge()
 
     companion object {
         private const val CAMERA_REQUEST_CODE = 1

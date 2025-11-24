@@ -19,13 +19,14 @@ Java_com_kartik_flamappai_NativeBridge_processFrame(
 // Stronger blur to reduce noise
     cvtColor(rgba, gray, COLOR_RGBA2GRAY);
 
-// Slight blur: keep detail but reduce noise
-    GaussianBlur(gray, gray, Size(3, 3), 1.0);
+// Light blur: keep details, reduce noise a bit
+    GaussianBlur(gray, gray, Size(3, 3), 0.8);
 
-// Tighter thresholds for thinner, cleaner edges
-    Canny(gray, gray, 70, 130);
+// Higher thresholds for thinner, cleaner text strokes
+    Canny(gray, gray, 80, 160);
 
     cvtColor(gray, rgba, COLOR_GRAY2RGBA);
+
 
 
 }
