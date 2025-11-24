@@ -30,8 +30,8 @@ This project implements a minimal real‑time edge detection viewer on Android u
 ### Build & Run
 
 1. Clone this repository:
+https://github.com/KartikNarayanBhat/flamapp-ai-assignment.git
 
-cd flamapp-ai-assignment/FlamAppAI
 
 2. Open the `FlamAppAI` folder in Android Studio.
 
