@@ -12,14 +12,13 @@ import org.opencv.android.CameraBridgeViewBase
 import org.opencv.android.JavaCameraView
 import org.opencv.android.OpenCVLoader
 import org.opencv.core.Mat
-import org.opencv.core.Size
-import org.opencv.imgproc.Imgproc
 
 class OpenCvCameraActivity : CameraActivity(),
     CameraBridgeViewBase.CvCameraViewListener2 {
 
     private lateinit var cameraView: JavaCameraView
     private var rgba: Mat? = null
+    private val nativeBridge = NativeBridge()   // <-- add this
 
     companion object {
         private const val CAMERA_REQUEST_CODE = 1
@@ -34,7 +33,6 @@ class OpenCvCameraActivity : CameraActivity(),
         cameraView.visibility = SurfaceView.VISIBLE
         cameraView.setCvCameraViewListener(this)
 
-        // Ask for camera permission if needed
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED
         ) {
@@ -60,7 +58,6 @@ class OpenCvCameraActivity : CameraActivity(),
         }
     }
 
-    // Handle runtime permission result
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -73,7 +70,7 @@ class OpenCvCameraActivity : CameraActivity(),
             grantResults[0] == PackageManager.PERMISSION_GRANTED
         ) {
             cameraView.setCameraPermissionGranted()
-            startOpenCvAndCamera()   // start immediately after user taps Allow
+            startOpenCvAndCamera()
         }
     }
 
@@ -100,7 +97,6 @@ class OpenCvCameraActivity : CameraActivity(),
     override fun getCameraViewList(): MutableList<CameraBridgeViewBase> =
         mutableListOf(cameraView)
 
-    // CvCameraViewListener2 methods
     override fun onCameraViewStarted(width: Int, height: Int) {
         rgba = Mat()
     }
@@ -112,14 +108,7 @@ class OpenCvCameraActivity : CameraActivity(),
 
     override fun onCameraFrame(inputFrame: CameraBridgeViewBase.CvCameraViewFrame): Mat {
         val frame = inputFrame.rgba()
-        val gray = Mat()
-        Imgproc.cvtColor(frame, gray, Imgproc.COLOR_RGBA2GRAY)
-        Imgproc.GaussianBlur(gray, gray, Size(5.0, 5.0), 1.5)
-        val edges = Mat()
-        Imgproc.Canny(gray, edges, 150.0, 300.0)
-        Imgproc.cvtColor(edges, frame, Imgproc.COLOR_GRAY2RGBA)
-        gray.release()
-        edges.release()
+        nativeBridge.processFrame(frame.nativeObjAddr)
         return frame
     }
 }
